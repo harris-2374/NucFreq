@@ -1,5 +1,9 @@
 # Version Tracking
 
+## v0.0.3
+
+- Added cml option conv2pdf that tells NucFreq to collect all png files from a sequence into a single PDF file.
+
 ## v0.0.2
 
 - Updated default y-axis height for plots from 200 to 100

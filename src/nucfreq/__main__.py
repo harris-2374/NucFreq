@@ -37,6 +37,7 @@ def run(
     DIMENSIONS,
     YAXIS,
     nucfreqpath,
+    conv2pdf,
 ):
     """Run NucFreq commands per-window"""
     chromosome, length = row[0], row[1]
@@ -89,25 +90,26 @@ def run(
         os.remove(tmpbed)
         continue
     # --------------------------------------------------------------
-    # -- Imports --
-    from PIL import Image
+    if conv2pdf:
+        # -- Imports --
+        from PIL import Image
 
-    # -- Logic --
-    files = sorted(
-        [str(f) for f in chrompngdir.iterdir()],
-        key=lambda x: (
-            x.split("/")[-1].strip(".png").split("_")[0],
-            int(x.split("/")[-1].strip(".png").split("_")[1]),
-        ),
-    )
+        # -- Logic --
+        files = sorted(
+            [str(f) for f in chrompngdir.iterdir()],
+            key=lambda x: (
+                x.split("/")[-1].strip(".png").split("_")[0],
+                int(x.split("/")[-1].strip(".png").split("_")[1]),
+            ),
+        )
 
-    images = [Image.open(f) for f in files]
+        images = [Image.open(f) for f in files]
 
-    pdf_path = pdf_dir / f"{chromosome}.pdf"
+        pdf_path = pdf_dir / f"{chromosome}.pdf"
 
-    images[0].save(
-        pdf_path, "PDF", resolution=100.0, save_all=True, append_images=images[1:]
-    )
+        images[0].save(
+            pdf_path, "PDF", resolution=100.0, save_all=True, append_images=images[1:]
+        )
     return
 
 
@@ -188,6 +190,12 @@ def main():
         default="src/nucfreq/NucPlot.py",
         help="Nucplot path",
     )
+    parser.add_argument(
+        "--conv2pdf",
+        action="store_true",
+        default=False,
+        help="Convert individual png files into a single PDF file",
+    )
     args = parser.parse_args()
     # -- Create output directories --
     png_dir = args.output / "PNG"
@@ -221,12 +229,14 @@ def main():
             DIMENSIONS=args.dimensions,
             YAXIS=args.yaxis,
             nucfreqpath=args.nucplot,
+            conv2pdf=args.conv2pdf,
         ),
         [list(r) for r in chrom_lengths.itertuples(index=False)],
         **{"num_cpus": args.threads},
     )
     # -- Remove intermediate png files --
-    shutil.rmtree(png_dir)
+    if args.conv2pdf:
+        shutil.rmtree(png_dir)
     return
 
 
