@@ -209,7 +209,7 @@ def main():
     pdf_dir.mkdir(parents=True, exist_ok=True)
     # -- Load Chromosome Lengths --
     chrom_lengths = pd.read_csv(
-        args.chromLengths,
+        args.fai,
         sep="\t",
         header=None,
     )
