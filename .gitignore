@@ -1,0 +1,7 @@
+data/
+.vscode/
+
+__pycache__
+*.egg-info
+
+test_results/
