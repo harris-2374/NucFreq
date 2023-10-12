@@ -1,5 +1,10 @@
 # Version Tracking
 
+## v0.0.2
+
+- Updated default y-axis height for plots from 200 to 100
+- Fixed issue with NucPlot.py path
+
 ## v0.0.1
 
 ### Updates

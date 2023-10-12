@@ -160,7 +160,7 @@ def main():
         "-y",
         "--yaxis",
         action="store",
-        default=200,
+        default=100,
         help="Y-axis limit for NucFreq plots",
         metavar="",
         type=int,
