@@ -84,7 +84,7 @@ def run(
                 )
         except subprocess.CalledProcessError as e:
             print(e)
-            exit()
+            return
         # Delete tmp file
         os.remove(tmpbed)
         continue
@@ -223,8 +223,7 @@ def main():
             nucfreqpath=args.nucplot,
         ),
         [list(r) for r in chrom_lengths.itertuples(index=False)],
-        **{"num_cpus": 8},
-        # **{"num_cpus": args.threads},
+        **{"num_cpus": args.threads},
     )
     # -- Remove intermediate png files --
     shutil.rmtree(png_dir)
