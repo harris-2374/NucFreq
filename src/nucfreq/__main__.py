@@ -44,11 +44,14 @@ def run(
     OUTPUT,
     DIMENSIONS,
     YAXIS,
+    nucfreqpath,
 ):
     """Run NucFreq commands per-window"""
-    chromosome, length = row.chromosome, row.length
+    chromosome, length = row[0], row[1]
+    chrompngdir = png_dir / chromosome
+    chrompngdir.mkdir(parents=True, exist_ok=True)
     range_groups = mygrouper(
-        5, [i for i in range(WINDOWSIZE, length + WINDOWSIZE, WINDOWSIZE)]
+        3, [i for i in range(WINDOWSIZE, length + WINDOWSIZE, WINDOWSIZE)]
     )
     for n, group in enumerate(range_groups):
         # 1. Make tmp bed file with coordinates
@@ -64,7 +67,7 @@ def run(
         # 2. Run command
         obed = datapoints_dir / f"{chromosome}_{n}.datapoints.bed"
         colorf = datapoints_dir / f"{chromosome}_{n}.colors"
-        opng = png_dir / f"{chromosome}_{n}.png"
+        opng = chrompngdir / f"{chromosome}_{n}.png"
         try:
             if opng.exists():
                 continue
@@ -72,7 +75,7 @@ def run(
                 rm_file = [i for i in rm_files if chromosome in i.stem][0]
                 subprocess.run(
                     [
-                        f"python NucPlot.py -y {YAXIS} -a -t 5 -r {rm_file} --bed {tmpbed} --obed {obed} {BAM} {opng}"
+                        f"python {nucfreqpath} -y {YAXIS} -a -t 5 -r {rm_file} --bed {tmpbed} --obed {obed} {BAM} {opng}"
                     ],
                     stderr=subprocess.DEVNULL,
                     shell=True,
@@ -81,7 +84,7 @@ def run(
             else:
                 subprocess.run(
                     [
-                        f"python NucPlot.py -y {YAXIS} -a -t 5 --bed {tmpbed} --obed {obed} {BAM} {opng}"
+                        f"python {nucfreqpath} -y {YAXIS} -a -t 5 --bed {tmpbed} --obed {obed} {BAM} {opng}"
                     ],
                     stderr=subprocess.DEVNULL,
                     shell=True,
@@ -93,104 +96,26 @@ def run(
         # Delete tmp file
         os.remove(tmpbed)
         continue
-    exit()
     # --------------------------------------------------------------
     # -- Imports --
-    import math
-    from PIL import Image, ImageEnhance
-
-    # -- Helper Functions --
-    def dimensions():
-        width, height = DIMENSIONS.split("x")
-        try:
-            height = int(height)
-        except ValueError:
-            if width == "n":
-                height = math.ceil(len(files) / 2)
-            else:
-                height = math.ceil(len(files) / int(width))
-        try:
-            width = int(width)
-        except ValueError:
-            if height == "n":
-                width = math.ceil(len(files) / 2)
-            else:
-                width = math.ceil(len(files) / int(height))
-        return width, height
-
-    def build_file_df(files):
-        df = pd.DataFrame(
-            pd.NA,
-            columns=["files", "chromosome", "start", "stop"],
-            index=range(len(files)),
-        )
-        df["files"] = [f for f in files]
-        df["chromosome"] = df["files"].apply(
-            lambda x: x.split("/")[-1].strip(".png").split("_")[0]
-        )
-        df["start"] = df["files"].apply(
-            lambda x: x.split("/")[-1].strip(".png").split("_")[1]
-        )
-        df["stop"] = df["files"].apply(
-            lambda x: x.split("/")[-1].strip(".png").split("_")[2]
-        )
-        return df
+    from PIL import Image
 
     # -- Logic --
     files = sorted(
-        [str(f) for f in png_dir.iterdir()],
+        [str(f) for f in chrompngdir.iterdir()],
         key=lambda x: (
             x.split("/")[-1].strip(".png").split("_")[0],
             int(x.split("/")[-1].strip(".png").split("_")[1]),
         ),
     )
-    # files = sorted([str(f) for f in png_dir.iterdir() if chromosome in f.name])
-    df = build_file_df(files)
-    df = df[df["chromosome"] == chromosome]
-    collaged_png_files = []
-    png_file_groups = mygrouper(5, df["files"])
-    filenum = 1
-    # -- Generate collaged files --
-    for f in png_file_groups:
-        if len(files) < 100:
-            outfile = collage_dir / f"{chromosome}_{filenum:03d}.png"
-            collaged_png_files.append(outfile)
-        elif 100 < len(files) < 1000:
-            outfile = collage_dir / f"{chromosome}_{filenum:04d}.png"
-            collaged_png_files.append(outfile)
-        else:
-            outfile = collage_dir / f"{chromosome}_{filenum:05d}.png"
-            collaged_png_files.append(outfile)
-        width, height = dimensions()
-        collage = Image.new(
-            "RGBA", (1500 * width, 500 * height), color=(255, 255, 255, 255)
-        )
-        c = 0
-        try:
-            for j in range(0, 500 * height, 500):
-                for i in range(0, 1500 * width, 1500):
-                    file = f[c]
-                    photo = Image.open(file).convert("RGBA")
-                    photo = photo.resize((1500, 500))
-                    filter = ImageEnhance.Sharpness(photo)
-                    filtered_photo = filter.enhance(1.0)
-                    collage.paste(filtered_photo, (i, j))
-                    c += 1
-            collage.save(outfile)
-            filenum += 1
-            continue
-        except:
-            collage.save(outfile)
-            filenum += 1
-            continue
-    # -- Merge all chromosome png files into a single PDF --
-    img_list = []
-    for f in collaged_png_files[1:]:
-        img_list.append(Image.open(f).convert("RGB"))
-        continue
-    pdfoutfile = pdf_dir / f"{chromosome}.pdf"
-    img1 = Image.open(collaged_png_files[0]).convert("RGB")
-    img1.save(pdfoutfile, save_all=True, append_images=img_list)
+
+    images = [Image.open(f) for f in files]
+
+    pdf_path = pdf_dir / f"{chromosome}.pdf"
+
+    images[0].save(
+        pdf_path, "PDF", resolution=100.0, save_all=True, append_images=images[1:]
+    )
     return
 
 
@@ -198,12 +123,12 @@ def run(
 def main():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
-        "-c",
-        "--chromLengths",
+        "-f",
+        "--fai",
         type=Path,
         action="store",
         required=True,
-        help="Bed file with chromosome lengths",
+        help="Reference assembly .fai file",
     )
     parser.add_argument(
         "-b",
@@ -278,7 +203,7 @@ def main():
     collage_dir = args.output / "PNGcollage"
     pdf_dir = args.output / "PDFcollage"
 
-    collage_dir.mkdir(parents=True, exist_ok=True)
+    # collage_dir.mkdir(parents=True, exist_ok=True)
     datapoints_dir.mkdir(parents=True, exist_ok=True)
     png_dir.mkdir(parents=True, exist_ok=True)
     pdf_dir.mkdir(parents=True, exist_ok=True)
@@ -287,11 +212,8 @@ def main():
         args.chromLengths,
         sep="\t",
         header=None,
-        names=["chromosome", "start", "length"],
     )
-    chrom_lengths["length"] = chrom_lengths["length"].apply(
-        lambda x: roundUp(x, args.windowsize)
-    )
+    chrom_lengths[1] = chrom_lengths[1].apply(lambda x: roundUp(x, args.windowsize))
     # -- Run chromosomes --
     p_umap(
         partial(
@@ -306,14 +228,13 @@ def main():
             OUTPUT=args.output,
             DIMENSIONS=args.dimensions,
             YAXIS=args.yaxis,
+            nucfreqpath=args.nucplot,
         ),
-        [r for r in chrom_lengths.itertuples(index=False)],
+        [list(r) for r in chrom_lengths.itertuples(index=False)],
         **{"num_cpus": args.threads},
     )
     # -- Remove intermediate png files --
     shutil.rmtree(png_dir)
-    shutil.rmtree(collage_dir)
-
     return
 
 
