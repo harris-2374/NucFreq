@@ -1,11 +1,3 @@
-"""
-Author: Andrew Harris
-Python 3.8
-
-python nucFreqWholeGenome.py -c Oge-1_final.sizes.bed -b /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/Minimap2/Oge1HiFi_to_Oge1Ref.sort.bam -w 1000000 -o /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/NucFreq/Oge1_output -r /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/NucFreq/Oge1_RepeatMasker/rm_chroms/
-
-python nucFreqWholeGenome.py -c Fca-126_final.sizes.bed -b /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/Minimap2/Fca126HiFi_to_Fca126Ref.sort.bam  -w 1000000 -o /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/NucFreq/Fca126_output -r /WMLab3/ajharris/BigCatHiFiReads/ccs_bam_files/GxD2/NucFreq/Fca126_RepeatMasker/rm_chroms/
-"""
 import argparse
 import itertools
 import math
@@ -179,7 +171,7 @@ def main():
         type=Path,
         action="store",
         default=Path().cwd(),
-        help="Output directory",
+        help="Output directory (default: cwd)",
     )
     parser.add_argument(
         "-t",
@@ -187,7 +179,7 @@ def main():
         type=int,
         action="store",
         default=8,
-        help="Number of threads",
+        help="Number of threads (default: 8)",
     )
     parser.add_argument(
         "--nucplot",
@@ -231,7 +223,8 @@ def main():
             nucfreqpath=args.nucplot,
         ),
         [list(r) for r in chrom_lengths.itertuples(index=False)],
-        **{"num_cpus": args.threads},
+        **{"num_cpus": 8},
+        # **{"num_cpus": args.threads},
     )
     # -- Remove intermediate png files --
     shutil.rmtree(png_dir)
