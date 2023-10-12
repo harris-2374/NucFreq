@@ -23,5 +23,5 @@ setup(
     ],
     scripts=["src/nucfreq/__main__.py"],
     entry_points={"console_scripts": ["nucfreq=nucfreq.__main__:main"]},
-    python_requires=">=3.10",
+    python_requires=">=3.8",
 )
