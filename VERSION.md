@@ -1,5 +1,9 @@
 # Version Tracking
 
+## v0.1.0
+
+- Integrated NucPlot.py so there is no need for the external script.
+
 ## v0.0.3
 
 - Added cml option conv2pdf that tells NucFreq to collect all png files from a sequence into a single PDF file.
